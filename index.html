@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة إدارة وتبادل الحسابات</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts - Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            discord: '#5865F2',
+                            rockstar: '#FCAF17',
+                            steam: '#171A21',
+                            primary: '#6366f1',
+                            accent: '#8b5cf6'
+                        }
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+    <!-- Notification Toast Container -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-[99999] flex flex-col gap-3 max-w-sm w-full"></div>
+
+    <!-- Authentication -->
+    <div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+        <div class="glass-card w-full max-w-md p-8 rounded-2xl shadow-2xl border border-slate-700/50 relative">
+            <div class="text-center space-y-2 mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 text-indigo-400 mb-2 border border-indigo-500/30"><i class="fa-solid fa-user-shield text-3xl"></i></div>
+                <h2 id="authTitle" class="text-2xl font-bold text-white">تسجيل الدخول</h2>
+                <p id="authDescription" class="text-sm text-slate-400">أدخل بريدك الإلكتروني وكلمة المرور.</p>
+            </div>
+            <form id="authForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1.5">البريد الإلكتروني</label>
+                    <input type="email" id="loginEmail" required autocomplete="email" placeholder="name@example.com" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-indigo-500 text-sm">
+                </div>
+                <div id="passwordFieldContainer">
+                    <label class="block text-sm font-medium text-slate-300 mb-1.5">كلمة المرور</label>
+                    <input type="password" id="loginPassword" required minlength="6" autocomplete="current-password" placeholder="6 أحرف على الأقل" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-indigo-500 text-sm">
+                </div>
+                <div id="forgotPasswordContainer" class="text-left">
+                    <button type="button" onclick="handleForgotPassword()" class="text-xs text-slate-400 hover:text-indigo-400 transition">نسيت كلمة المرور؟</button>
+                </div>
+                <button type="submit" id="authSubmitBtn" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg transition">تسجيل الدخول</button>
+                <button type="button" id="toggleAuthMode" class="w-full py-2 text-sm text-indigo-300 hover:text-white transition">ما عندك حساب؟ إنشاء حساب جديد</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="appContainer" class="hidden min-h-screen flex flex-col">
+        <header class="glass-card sticky top-0 z-40 border-b border-slate-800">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-white leading-none">zzx</h1>
+                        <span class="text-xs text-slate-400">zzx</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-sm">
+                        <i class="fa-solid fa-circle-user text-indigo-400"></i>
+                        <span id="currentUserEmailDisplay" class="text-slate-300 font-medium"></span>
+                    </div>
+                    <button onclick="handleLogout()" class="px-3.5 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-sm font-medium transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>خروج</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+            <section>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-indigo-400"></i>
+                        <span>لوحة الإحصائيات والأعداد</span>
+                    </h2>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div class="glass-card p-4 rounded-2xl border border-slate-800 relative overflow-hidden">
+                        <p class="text-xs font-medium text-slate-400 mb-1">إجمالي الحسابات</p>
+                        <p id="statTotal" class="text-2xl font-black text-white">0</p>
+                    </div>
+                    <div class="glass-card p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 relative overflow-hidden">
+                        <p class="text-xs font-medium text-emerald-400 mb-1">المتاحة</p>
+                        <p id="statAvailable" class="text-2xl font-black text-emerald-400">0</p>
+                    </div>
+                    <div class="glass-card p-4 rounded-2xl border border-purple-500/20 bg-purple-500/5 relative overflow-hidden">
+                        <p class="text-xs font-medium text-purple-400 mb-1">المستخدمة</p>
+                        <p id="statClaimed" class="text-2xl font-black text-purple-400">0</p>
+                    </div>
+                    <div class="glass-card p-4 rounded-2xl border border-indigo-500/20 relative overflow-hidden">
+                        <p class="text-xs font-medium text-indigo-400 mb-1">دسكورد</p>
+                        <p id="statDiscord" class="text-2xl font-black text-indigo-300">0</p>
+                    </div>
+                    <div class="glass-card p-4 rounded-2xl border border-amber-500/20 relative overflow-hidden">
+                        <p class="text-xs font-medium text-amber-400 mb-1">روكستار</p>
+                        <p id="statRockstar" class="text-2xl font-black text-amber-300">0</p>
+                    </div>
+                    <div class="glass-card p-4 rounded-2xl border border-slate-600/30 relative overflow-hidden">
+                        <p class="text-xs font-medium text-slate-300 mb-1">ستيم</p>
+                        <p id="statSteam" class="text-2xl font-black text-slate-200">0</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="glass-card p-6 rounded-2xl border border-slate-800 relative">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
+                        <i class="fa-solid fa-plus-circle text-lg"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-white">إضافة حساب جديد</h2>
+                        <p class="text-xs text-slate-400">قم بإضافة بيانات الحساب المتاح وتحديد منصته</p>
+                    </div>
+                </div>
+                <form id="addAccountForm" onsubmit="handleAddAccount(event)" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div class="md:col-span-6">
+                        <label class="block text-xs font-medium text-slate-300 mb-1">بيانات الحساب</label>
+                        <input type="text" id="accCredentials" required placeholder="مثال: user@mail.com:password123" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                    <div class="md:col-span-4">
+                        <label class="block text-xs font-medium text-slate-300 mb-1">نوع المنصة</label>
+                        <select id="accPlatform" required class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition cursor-pointer">
+                            <option value="discord">دسكورد (Discord)</option>
+                            <option value="rockstar">روكستار (Rockstar)</option>
+                            <option value="steam">ستيم (Steam)</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2 flex items-end">
+                        <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus text-xs"></i>
+                            <span>حفظ</span>
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <h2 class="text-lg font-bold text-white">القائمة الأولى: الحسابات المتاحة</h2>
+                            <div class="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+                                <button onclick="switchTab('discord')" id="tab-discord" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-400 bg-indigo-500/10">دسكورد</button>
+                                <button onclick="switchTab('rockstar')" id="tab-rockstar" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400">روكستار</button>
+                                <button onclick="switchTab('steam')" id="tab-steam" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400">ستيم</button>
+                            </div>
+                        </div>
+                        <div id="tabContentList" class="space-y-3 min-h-[180px]"></div>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
+                        <h2 class="text-lg font-bold text-white">القائمة الثانية: سحب واستلام الحسابات</h2>
+                        <div id="claimAccountsList" class="space-y-3 max-h-[350px] overflow-y-auto pr-1"></div>
+                    </div>
+                </div>
+                <div class="lg:col-span-5">
+                    <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4 h-full flex flex-col">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h2 class="text-lg font-bold text-white">القائمة الثالثة: الحسابات المستلمة</h2>
+                            <span id="claimedBadgeCount" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300">0</span>
+                        </div>
+                        <div id="claimedHistoryList" class="space-y-3 flex-1 overflow-y-auto max-h-[550px] pr-1"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Firebase SDK & Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerification, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyCAgjvJT6o3ZTFrhAuXiEV6V3ucW_JgaDY",
+          authDomain: "zzzx-684fb.firebaseapp.com",
+          projectId: "zzzx-684fb",
+          storageBucket: "zzzx-684fb.firebasestorage.app",
+          messagingSenderId: "575709545954",
+          appId: "1:575709545954:web:b2e9b532148175c1b1e5bb",
+          measurementId: "G-Z03B5ND06F"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        window.currentUser = null;
+        let authMode = "login";
+        window.activeTab = 'discord';
+        window.accounts = [];
+
+        window.showToast = function(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            let bgColor = 'bg-slate-800 border-slate-700 text-white';
+            if (type === 'success') bgColor = 'bg-emerald-900/90 border-emerald-500/50 text-emerald-200';
+            if (type === 'error') bgColor = 'bg-rose-900/90 border-rose-500/50 text-rose-200';
+            
+            toast.className = `p-3.5 rounded-xl border shadow-xl text-xs font-semibold flex items-center justify-between transition-all duration-300 ${bgColor}`;
+            toast.innerHTML = `<span>${message}</span><i class="fa-solid fa-xmark cursor-pointer opacity-70 hover:opacity-100 mr-2" onclick="this.parentElement.remove()"></i>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 4000);
+        };
+
+        window.copyToClipboard = function(text, showToastFlag = true) {
+            navigator.clipboard.writeText(text).then(() => {
+                if (showToastFlag) showToast('تم نسخ البيانات للحافظة بنجاح!', 'success');
+            }).catch(() => {
+                showToast('تعذر النسخ التلقائي', 'error');
+            });
+        };
+
+        onSnapshot(collection(db, "accounts"), (snapshot) => {
+            window.accounts = [];
+            snapshot.forEach((docSnap) => {
+                window.accounts.push({ id: docSnap.id, ...docSnap.data() });
+            });
+            window.updateUI();
+        });
+
+        document.getElementById('authForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('authSubmitBtn');
+            btn.disabled = true;
+            btn.textContent = authMode === 'register' ? 'جاري إنشاء الحساب...' : 'جاري تسجيل الدخول...';
+            try {
+                if (authMode === 'register') {
+                    const result = await createUserWithEmailAndPassword(auth, email, password);
+                    try {
+                        await sendEmailVerification(result.user);
+                        showToast('تم إنشاء الحساب وإرسال رابط التحقق لبريدك.', 'success');
+                    } catch (e) {
+                        showToast('تم إنشاء الحساب بنجاح!', 'success');
+                    }
+                    window.currentUser = result.user.email;
+                    showAppUI();
+                } else {
+                    const result = await signInWithEmailAndPassword(auth, email, password);
+                    window.currentUser = result.user.email;
+                    showAppUI();
+                }
+            } catch (err) {
+                console.error('Authentication error:', err);
+                const messages = {
+                    'auth/email-already-in-use': 'هذا البريد مسجل مسبقاً. قم بتسجيل الدخول.',
+                    'auth/invalid-email': 'صيغة البريد الإلكتروني غير صحيحة.',
+                    'auth/weak-password': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.',
+                    'auth/invalid-credential': 'البريد أو كلمة المرور غير صحيحة.',
+                    'auth/user-not-found': 'لا يوجد حساب بهذا البريد. أنشئ حساباً جديداً.',
+                    'auth/wrong-password': 'كلمة المرور غير صحيحة.',
+                    'auth/too-many-requests': 'محاولات كثيرة؛ حاول لاحقاً.',
+                    'auth/network-request-failed': 'تحقق من اتصال الإنترنت.',
+                    'auth/operation-not-allowed': 'فعّل تسجيل الدخول بالبريد وكلمة المرور من Firebase Console.'
+                };
+
+                if (err.code === 'auth/email-already-in-use') {
+                    authMode = 'login';
+                    document.getElementById('authTitle').textContent = 'تسجيل الدخول';
+                    document.getElementById('authDescription').textContent = 'أدخل كلمة المرور لتسجيل الدخول بحسابك.';
+                    document.getElementById('toggleAuthMode').textContent = 'ما عندك حساب؟ إنشاء حساب جديد';
+                }
+
+                showToast(messages[err.code] || 'تعذرت العملية. تحقق من البيانات وحاول مجدداً.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = authMode === 'register' ? 'إنشاء حساب جديد' : 'تسجيل الدخول';
+            }
+        });
+
+        window.handleForgotPassword = async function() {
+            const email = document.getElementById('loginEmail').value.trim();
+            if (!email) {
+                showToast('الرجاء إدخال البريد الإلكتروني أولاً في الحقل بالأعلى.', 'error');
+                return;
+            }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showToast('تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني.', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast('تعذر إرسال بريد الاستعادة. تأكد من صحة البريد.', 'error');
+            }
+        };
+
+        document.getElementById('toggleAuthMode').addEventListener('click', () => {
+            authMode = authMode === 'login' ? 'register' : 'login';
+            document.getElementById('authTitle').textContent = authMode === 'register' ? 'إنشاء حساب جديد' : 'تسجيل الدخول';
+            document.getElementById('authDescription').textContent = authMode === 'register'
+                ? 'أنشئ حساباً ببريدك الإلكتروني وكلمة مرور من 6 أحرف على الأقل.'
+                : 'أدخل بريدك الإلكتروني وكلمة المرور.';
+            document.getElementById('authSubmitBtn').textContent = authMode === 'register' ? 'إنشاء حساب جديد' : 'تسجيل الدخول';
+            document.getElementById('toggleAuthMode').textContent = authMode === 'register'
+                ? 'لديك حساب بالفعل؟ تسجيل الدخول'
+                : 'ما عندك حساب؟ إنشاء حساب جديد';
+            
+            const passContainer = document.getElementById('passwordFieldContainer');
+            const forgotContainer = document.getElementById('forgotPasswordContainer');
+            if (authMode === 'register') {
+                passContainer.style.display = 'block';
+                forgotContainer.style.display = 'none';
+                document.getElementById('loginPassword').autocomplete = 'new-password';
+            } else {
+                passContainer.style.display = 'block';
+                forgotContainer.style.display = 'block';
+                document.getElementById('loginPassword').autocomplete = 'current-password';
+            }
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.currentUser = user.email;
+                window.showAppUI();
+            } else {
+                window.currentUser = null;
+                window.showAuthModal();
+            }
+        });
+
+        window.handleLogout = async function() {
+            try {
+                await signOut(auth);
+                window.currentUser = null;
+                showToast('تم تسجيل الخروج', 'info');
+            } catch (err) {
+                console.error(err);
+                showToast('تعذر تسجيل الخروج', 'error');
+            }
+        };
+
+        window.showAuthModal = function() {
+            document.getElementById('authModal').classList.remove('hidden');
+            document.getElementById('appContainer').classList.add('hidden');
+        };
+
+        window.showAppUI = function() {
+            document.getElementById('authModal').classList.add('hidden');
+            document.getElementById('appContainer').classList.remove('hidden');
+            document.getElementById('currentUserEmailDisplay').innerText = window.currentUser || '';
+            window.updateUI();
+        };
+
+        window.handleAddAccount = async function(e) {
+            e.preventDefault();
+            const credsInput = document.getElementById('accCredentials');
+            const platformInput = document.getElementById('accPlatform');
+
+            try {
+                await addDoc(collection(db, "accounts"), {
+                    platform: platformInput.value,
+                    credentials: credsInput.value.trim(),
+                    isClaimed: false,
+                    createdAt: new Date().toISOString()
+                });
+                credsInput.value = '';
+                showToast('تمت إضافة الحساب بنجاح سحابياً!', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast('حدث خطأ أثناء حفظ الحساب', 'error');
+            }
+        };
+
+        window.claimAccount = async function(id) {
+            const acc = window.accounts.find(a => a.id === id);
+            if (acc && !acc.isClaimed) {
+                try {
+                    const accRef = doc(db, "accounts", id);
+                    await updateDoc(accRef, {
+                        isClaimed: true,
+                        claimedBy: window.currentUser,
+                        claimedAt: new Date().toISOString()
+                    });
+                    copyToClipboard(acc.credentials, false);
+                    showToast('تم استلام الحساب ونسخ بياناته للحافظة بنجاح!', 'success');
+                } catch (err) {
+                    console.error(err);
+                    showToast('تعذر استلام الحساب', 'error');
+                }
+            }
+        };
+
+        window.deleteAccount = async function(id) {
+            if (confirm('هل أنت متأكد من حذف هذا الحساب نهائياً؟')) {
+                try {
+                    await deleteDoc(doc(db, "accounts", id));
+                    showToast('تم حذف الحساب بنجاح', 'info');
+                } catch (err) {
+                    showToast('تعذر حذف الحساب', 'error');
+                }
+            }
+        };
+
+        window.switchTab = function(platform) {
+            window.activeTab = platform;
+            ['discord', 'rockstar', 'steam'].forEach(p => {
+                const btn = document.getElementById(`tab-${p}`);
+                if (p === platform) {
+                    btn.className = "tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition text-indigo-400 bg-indigo-500/10 border border-indigo-500/30";
+                } else {
+                    btn.className = "tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white";
+                }
+            });
+            window.renderPlatformTabContent();
+        };
+
+        window.getPlatformBadge = function(platform) {
+            switch(platform) {
+                case 'discord':
+                    return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"><i class="fa-brands fa-discord"></i> دسكورد</span>`;
+                case 'rockstar':
+                    return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20"><i class="fa-solid fa-r"></i> روكستار</span>`;
+                case 'steam':
+                    return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-700/50 text-slate-300 border border-slate-600/30"><i class="fa-brands fa-steam"></i> ستيم</span>`;
+                default:
+                    return '';
+            }
+        };
+
+        window.updateUI = function() {
+            window.renderStats();
+            window.renderPlatformTabContent();
+            window.renderClaimableAccounts();
+            window.renderClaimedHistory();
+        };
+
+        window.renderStats = function() {
+            const total = window.accounts.length;
+            const available = window.accounts.filter(a => !a.isClaimed).length;
+            const claimed = window.accounts.filter(a => a.isClaimed).length;
+            const discordCount = window.accounts.filter(a => a.platform === 'discord').length;
+            const rockstarCount = window.accounts.filter(a => a.platform === 'rockstar').length;
+            const steamCount = window.accounts.filter(a => a.platform === 'steam').length;
+
+            document.getElementById('statTotal').innerText = total;
+            document.getElementById('statAvailable').innerText = available;
+            document.getElementById('statClaimed').innerText = claimed;
+            document.getElementById('statDiscord').innerText = discordCount;
+            document.getElementById('statRockstar').innerText = rockstarCount;
+            document.getElementById('statSteam').innerText = steamCount;
+            document.getElementById('claimedBadgeCount').innerText = claimed;
+        };
+
+        window.renderPlatformTabContent = function() {
+            const container = document.getElementById('tabContentList');
+            const filtered = window.accounts.filter(a => a.platform === window.activeTab && !a.isClaimed);
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 border border-dashed border-slate-800 rounded-xl">
+                        <i class="fa-solid fa-folder-open text-3xl text-slate-600 mb-2"></i>
+                        <p class="text-xs text-slate-500">لا توجد حسابات متاحة حالياً لـ ${window.activeTab.toUpperCase()}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(acc => `
+                <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex items-center justify-between hover:border-slate-700 transition">
+                    <div class="flex items-center gap-3">
+                        ${window.getPlatformBadge(acc.platform)}
+                        <span class="font-mono text-xs text-slate-300 font-semibold tracking-wide">${acc.credentials}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="copyToClipboard('${acc.credentials}')" class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition" title="نسخ">
+                            <i class="fa-regular fa-copy text-sm"></i>
+                        </button>
+                        <button onclick="deleteAccount('${acc.id}')" class="p-2 hover:bg-red-500/10 rounded-lg text-slate-500 hover:text-red-400 transition" title="حذف">
+                            <i class="fa-solid fa-trash text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        window.renderClaimableAccounts = function() {
+            const container = document.getElementById('claimAccountsList');
+            const available = window.accounts.filter(a => !a.isClaimed);
+
+            if (available.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 border border-dashed border-slate-800 rounded-xl">
+                        <i class="fa-solid fa-check-double text-3xl text-slate-600 mb-2"></i>
+                        <p class="text-xs text-slate-500">جميع الحسابات مستلمة، لا توجد حسابات متبقية للسحب</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = available.map(acc => `
+                <div class="p-3.5 bg-slate-900/80 rounded-xl border border-slate-800 flex items-center justify-between hover:border-emerald-500/30 transition">
+                    <div class="flex items-center gap-3">
+                        ${window.getPlatformBadge(acc.platform)}
+                        <span class="font-mono text-xs text-slate-300">${acc.credentials}</span>
+                    </div>
+                    <button onclick="claimAccount('${acc.id}')" class="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                        <i class="fa-solid fa-download text-xs"></i>
+                        <span>سحب</span>
+                    </button>
+                </div>
+            `).join('');
+        };
+
+        window.renderClaimedHistory = function() {
+            const container = document.getElementById('claimedHistoryList');
+            const claimed = window.accounts.filter(a => a.isClaimed);
+
+            if (claimed.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 border border-dashed border-slate-800 rounded-xl">
+                        <i class="fa-solid fa-box-open text-3xl text-slate-600 mb-2"></i>
+                        <p class="text-xs text-slate-500">لم يتم استلام أي حسابات بعد</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = claimed.map(acc => `
+                <div class="p-3.5 bg-slate-900/60 rounded-xl border border-purple-500/10 space-y-2">
+                    <div class="flex items-center justify-between">
+                        ${window.getPlatformBadge(acc.platform)}
+                        <span class="text-[10px] text-slate-500">مستلم بواسطة: <span class="text-purple-400 font-medium">${acc.claimedBy || 'مستخدم'}</span></span>
+                    </div>
+                    <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                        <span class="font-mono text-xs text-slate-300 break-all select-all">${acc.credentials}</span>
+                        <button onclick="copyToClipboard('${acc.credentials}')" class="text-slate-400 hover:text-white p-1" title="نسخ">
+                            <i class="fa-regular fa-copy text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        };
+    </script>
+</body>
+</html>
