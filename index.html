@@ -218,7 +218,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerification, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         // Firebase Configuration
         const firebaseConfig = {
@@ -279,22 +279,11 @@
             try {
                 if (authMode === 'register') {
                     const result = await createUserWithEmailAndPassword(auth, email, password);
-                    await sendEmailVerification(result.user);
-                    await signOut(auth); // تسجيل الخروج مباشرة لإجباره على تأكيد البريد
-                    showToast('تم إنشاء الحساب! أرسلنا رابط التحقق إلى بريدك الإلكتروني.', 'success');
-                    authMode = 'login';
-                    document.getElementById('authTitle').textContent = 'تسجيل الدخول';
-                    document.getElementById('authDescription').textContent = 'أدخل بريدك وكلمة المرور بعد تأكيد حسابك.';
+                    showToast('تم إنشاء الحساب وتسجيل الدخول بنجاح!', 'success');
+                    window.currentUser = result.user.email;
+                    showAppUI();
                 } else {
                     const result = await signInWithEmailAndPassword(auth, email, password);
-                    
-                    // شرط منع الدخول إذا لم يتم تأكيد البريد الإلكتروني
-                    if (!result.user.emailVerified) {
-                        await signOut(auth);
-                        showToast('يجب تأكيد بريدك الإلكتروني أولاً قبل تسجيل الدخول.', 'error');
-                        return;
-                    }
-
                     window.currentUser = result.user.email;
                     showAppUI();
                 }
@@ -307,7 +296,7 @@
                     'auth/invalid-credential': 'البريد أو كلمة المرور غير صحيحة.',
                     'auth/user-not-found': 'لا يوجد حساب بهذا البريد. أنشئ حساباً جديداً.',
                     'auth/wrong-password': 'كلمة المرور غير صحيحة.',
-                    'auth/too-many-requests': 'محاولات كثيرة؛ حاول لاحقاً.',
+                    'auth/too-many-requests': 'محاولات كثيرة خاطئة؛ حاول لاحقاً أو استعد كلمة المرور.',
                     'auth/network-request-failed': 'تحقق من اتصال الإنترنت.',
                     'auth/operation-not-allowed': 'فعّل تسجيل الدخول بالبريد وكلمة المرور من Firebase Console.'
                 };
@@ -323,17 +312,6 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = authMode === 'register' ? 'إنشاء حساب جديد' : 'تسجيل الدخول';
-            }
-        });
-
-        // تعديل مراقب الحالة لمنع الدخول التلقائي إذا لم يتم التحقق
-        onAuthStateChanged(auth, (user) => {
-            if (user && user.emailVerified) {
-                window.currentUser = user.email;
-                window.showAppUI();
-            } else {
-                window.currentUser = null;
-                window.showAuthModal();
             }
         });
 
