@@ -279,16 +279,22 @@
             try {
                 if (authMode === 'register') {
                     const result = await createUserWithEmailAndPassword(auth, email, password);
-                    try {
-                        await sendEmailVerification(result.user);
-                        showToast('تم إنشاء الحساب وإرسال رابط التحقق لبريدك.', 'success');
-                    } catch (e) {
-                        showToast('تم إنشاء الحساب بنجاح!', 'success');
-                    }
-                    window.currentUser = result.user.email;
-                    showAppUI();
+                    await sendEmailVerification(result.user);
+                    await signOut(auth); // تسجيل الخروج مباشرة لإجباره على تأكيد البريد
+                    showToast('تم إنشاء الحساب! أرسلنا رابط التحقق إلى بريدك الإلكتروني.', 'success');
+                    authMode = 'login';
+                    document.getElementById('authTitle').textContent = 'تسجيل الدخول';
+                    document.getElementById('authDescription').textContent = 'أدخل بريدك وكلمة المرور بعد تأكيد حسابك.';
                 } else {
                     const result = await signInWithEmailAndPassword(auth, email, password);
+                    
+                    // شرط منع الدخول إذا لم يتم تأكيد البريد الإلكتروني
+                    if (!result.user.emailVerified) {
+                        await signOut(auth);
+                        showToast('يجب تأكيد بريدك الإلكتروني أولاً قبل تسجيل الدخول.', 'error');
+                        return;
+                    }
+
                     window.currentUser = result.user.email;
                     showAppUI();
                 }
@@ -317,6 +323,17 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = authMode === 'register' ? 'إنشاء حساب جديد' : 'تسجيل الدخول';
+            }
+        });
+
+        // تعديل مراقب الحالة لمنع الدخول التلقائي إذا لم يتم التحقق
+        onAuthStateChanged(auth, (user) => {
+            if (user && user.emailVerified) {
+                window.currentUser = user.email;
+                window.showAppUI();
+            } else {
+                window.currentUser = null;
+                window.showAuthModal();
             }
         });
 
